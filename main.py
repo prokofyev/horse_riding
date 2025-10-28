@@ -31,6 +31,8 @@ class Game:
                         self.horse.accelerate()
                     if event.key == pygame.K_LEFT:
                         self.horse.decelerate()
+                    if event.key == pygame.K_UP:
+                        self.horse.barrier()
             
             # Обработка непрерывного ввода
             # keys = pygame.key.get_pressed()

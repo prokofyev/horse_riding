@@ -19,6 +19,7 @@ class Horse(pygame.sprite.Sprite):
             'walk': AnimationManager.load_animation('assets/horse/walk', fps=10, loop=True),
             'trot': AnimationManager.load_animation('assets/horse/trot', fps=12, loop=True),
             'gallop': AnimationManager.load_animation('assets/horse/gallop', fps=20, loop=True),
+            'barrier': AnimationManager.load_animation('assets/horse/barrier', fps=20, loop=False),
         }
         
         self.current_animation = 'idle'
@@ -29,6 +30,9 @@ class Horse(pygame.sprite.Sprite):
         self.idle_start_time = time.time()
         self.next_idle_change_time = self._get_next_idle_change_time()
         
+        # Очередь для последующего переключения анимации
+        self.queued_animation = None
+        
         # Автоматический запуск анимации
         self.animations[self.current_animation].play()
     
@@ -36,6 +40,15 @@ class Horse(pygame.sprite.Sprite):
         # Обновляем текущую анимацию (dt - delta time)
         self.animations[self.current_animation].update(dt)
         self.image = self.animations[self.current_animation].get_current_frame()
+        
+        # Если играется переходная анимация, проверяем завершение и выполняем запланированное переключение
+        if self.animations[self.current_animation].is_finished:
+            if self.queued_animation:
+                next_anim = self.queued_animation
+                self.queued_animation = None
+                self.set_animation(next_anim)
+            else:
+                self.set_animation('idle')
         
         # Проверяем случайную смену idle анимации
         self._check_idle_random_change()
@@ -81,7 +94,8 @@ class Horse(pygame.sprite.Sprite):
 
     def accelerate(self):
         if self.current_animation in ['idle', 'idle2', 'idle3']:
-            self.set_animation('walk')
+            self.queued_animation = 'walk'
+            self.set_animation('start_moving')
         elif self.current_animation in ['walk']:
             self.set_animation('trot')  
         elif self.current_animation in ['trot']:
@@ -89,8 +103,14 @@ class Horse(pygame.sprite.Sprite):
 
     def decelerate(self):
         if self.current_animation in ['walk']:
-            self.set_animation('idle')
+            self.queued_animation = 'idle'
+            self.set_animation('stop_moving')
         elif self.current_animation in ['trot']:
             self.set_animation('walk')
         elif self.current_animation in ['gallop']:
             self.set_animation('trot')
+
+    def barrier(self):
+        if self.current_animation in ['gallop', 'trot', 'walk']:
+            self.queued_animation = self.current_animation
+            self.set_animation('barrier')
