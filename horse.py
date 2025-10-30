@@ -20,8 +20,11 @@ class Horse(pygame.sprite.Sprite):
             'trot': AnimationManager.load_animation('assets/horse/trot', fps=12, loop=True),
             'gallop': AnimationManager.load_animation('assets/horse/gallop', fps=20, loop=True),
             'barrier': AnimationManager.load_animation('assets/horse/barrier', fps=20, loop=False),
+            'turn': AnimationManager.load_animation('assets/horse/turn', fps=8, loop=False),
         }
         
+        self.facing_right = True
+
         self.current_animation = 'idle'
         self.image = self.animations[self.current_animation].get_current_frame()
         self.rect = self.image.get_rect(topleft=position)
@@ -39,7 +42,11 @@ class Horse(pygame.sprite.Sprite):
     def update(self, dt):
         # Обновляем текущую анимацию (dt - delta time)
         self.animations[self.current_animation].update(dt)
+
         self.image = self.animations[self.current_animation].get_current_frame()
+        if not self.facing_right and self.current_animation != 'turn' or \
+                self.facing_right and self.current_animation == 'turn':
+            self.image = pygame.transform.flip(self.image, True, False)
         
         # Если играется переходная анимация, проверяем завершение и выполняем запланированное переключение
         if self.animations[self.current_animation].is_finished:
@@ -102,6 +109,9 @@ class Horse(pygame.sprite.Sprite):
             self.set_animation('gallop')
 
     def decelerate(self):
+        if self.current_animation in ['idle', 'idle2', 'idle3']:
+            self.set_animation('turn')
+            self.facing_right = not self.facing_right
         if self.current_animation in ['walk']:
             self.queued_animation = 'idle'
             self.set_animation('stop_moving')

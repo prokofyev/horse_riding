@@ -28,9 +28,15 @@ class Game:
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RIGHT:
-                        self.horse.accelerate()
+                        if self.horse.facing_right:
+                            self.horse.accelerate()
+                        else:
+                            self.horse.decelerate()
                     if event.key == pygame.K_LEFT:
-                        self.horse.decelerate()
+                        if self.horse.facing_right:
+                            self.horse.decelerate()
+                        else:
+                            self.horse.accelerate()
                     if event.key == pygame.K_UP:
                         self.horse.barrier()
             
