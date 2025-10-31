@@ -1,6 +1,7 @@
 import pygame
 
 from horse import Horse
+from path import Path
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 
 
@@ -12,8 +13,8 @@ class Game:
         
         # Создание игрока
         self.horse = Horse((100, 100))
-        self.all_sprites = pygame.sprite.Group(self.horse)
-        
+        self.path = Path(self.horse)
+
         # Для передачи delta time
         self.dt = 0
     
@@ -46,11 +47,12 @@ class Game:
             #     self.horse.set_animation('start')
             
             # Обновление с передачей delta time
-            self.all_sprites.update(self.dt)
+            self.path.update(self.dt)
             
             # Отрисовка
-            self.screen.fill((0, 0, 0))
-            self.all_sprites.draw(self.screen)
+            self.screen.fill((149, 178, 98))
+            # Сначала рисуем дорожку (траву), затем лошадь
+            self.path.draw(self.screen)
             pygame.display.flip()
 
 if __name__ == "__main__":

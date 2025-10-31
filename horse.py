@@ -59,6 +59,9 @@ class Horse(pygame.sprite.Sprite):
         
         # Проверяем случайную смену idle анимации
         self._check_idle_random_change()
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
     
     def set_animation(self, animation_name):
         if animation_name in self.animations and animation_name != self.current_animation:
