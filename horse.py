@@ -14,13 +14,13 @@ class Horse(pygame.sprite.Sprite):
             'idle': AnimationManager.load_animation('assets/horse/idle', fps=8, loop=True),
             'idle2': AnimationManager.load_animation('assets/horse/idle2', fps=8, loop=False),
             'idle3': AnimationManager.load_animation('assets/horse/idle3', fps=8, loop=False),
-            'start_moving': AnimationManager.load_animation('assets/horse/start_moving', fps=8, loop=False),
-            'stop_moving': AnimationManager.load_animation('assets/horse/stop_moving', fps=8, loop=False),
+            'start_moving': AnimationManager.load_animation('assets/horse/start_moving', fps=10, loop=False),
+            'stop_moving': AnimationManager.load_animation('assets/horse/stop_moving', fps=16, loop=False),
             'walk': AnimationManager.load_animation('assets/horse/walk', fps=10, loop=True),
-            'trot': AnimationManager.load_animation('assets/horse/trot', fps=12, loop=True),
-            'gallop': AnimationManager.load_animation('assets/horse/gallop', fps=20, loop=True),
-            'barrier': AnimationManager.load_animation('assets/horse/barrier', fps=20, loop=False),
-            'turn': AnimationManager.load_animation('assets/horse/turn', fps=8, loop=False),
+            'trot': AnimationManager.load_animation('assets/horse/trot', fps=14, loop=True),
+            'gallop': AnimationManager.load_animation('assets/horse/gallop', fps=25, loop=True),
+            'barrier': AnimationManager.load_animation('assets/horse/barrier', fps=50, loop=False),
+            'turn': AnimationManager.load_animation('assets/horse/turn', fps=16, loop=False),
         }
         
         self.facing_right = True
