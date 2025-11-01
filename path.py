@@ -1,21 +1,27 @@
 import random
 import pygame
 
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 from grass import Grass
 
 
 class Path:
-    def __init__(self, horse):
+    def __init__(self, horse, top_y, bottom_y, screen_width):
         self.horse = horse
+        self.screen_width = screen_width
         self.grass_sprites = pygame.sprite.Group()
         self.spawn_timer = 0.0
         self.next_spawn = 0.0
         self._schedule_next_spawn(0)
 
-        # Вертикальная полоса для травы (у земли)
-        self.min_y = int(SCREEN_HEIGHT * 0.65)
-        self.max_y = int(SCREEN_HEIGHT * 0.9)
+        # Границы области для этой дорожки
+        self.top_y = top_y
+        self.bottom_y = bottom_y
+        
+        # Вертикальная полоса для травы (у земли в пределах области)
+        area_height = bottom_y - top_y
+        # Трава занимает нижние 25-30% области
+        self.min_y = int(top_y + area_height * 0.65)
+        self.max_y = int(top_y + area_height * 0.9)
 
         # Отступы за пределы экрана для спауна/очистки
         self.offscreen_margin = 64
@@ -45,7 +51,7 @@ class Path:
             dx = int(base_dx * perspective_multiplier)
             sprite.rect.x += dx
             
-            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > SCREEN_WIDTH + self.offscreen_margin:
+            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.grass_sprites.remove(sprite)
 
         # Спавним новую траву в зависимости от скорости
@@ -67,7 +73,7 @@ class Path:
         y = random.randint(self.min_y, self.max_y)
         if self.horse.facing_right:
             # Двигаемся направо -> фон идет влево: спавним справа
-            x = SCREEN_WIDTH + self.offscreen_margin
+            x = self.screen_width + self.offscreen_margin
         else:
             # Двигаемся налево -> фон идет вправо: спавним слева
             x = -self.offscreen_margin
