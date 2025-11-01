@@ -5,9 +5,10 @@ from grass import Grass
 
 
 class Path:
-    def __init__(self, horse, top_y, bottom_y, screen_width):
+    def __init__(self, horse, top_y, bottom_y, screen_width, controls):
         self.horse = horse
         self.screen_width = screen_width
+        self.controls = controls
         self.grass_sprites = pygame.sprite.Group()
         self.spawn_timer = 0.0
         self.next_spawn = 0.0
@@ -65,6 +66,22 @@ class Path:
 
         # Обновляем лошадь (анимации и логику)
         self.horse.update(dt)
+    
+    def handle_event(self, event):
+        """Обрабатывает события клавиатуры для управления лошадью"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == self.controls.right:
+                if self.horse.facing_right:
+                    self.horse.accelerate()
+                else:
+                    self.horse.decelerate()
+            elif event.key == self.controls.left:
+                if self.horse.facing_right:
+                    self.horse.decelerate()
+                else:
+                    self.horse.accelerate()
+            elif event.key == self.controls.up:
+                self.horse.barrier()
 
     def draw(self, surface):
         self.grass_sprites.draw(surface)

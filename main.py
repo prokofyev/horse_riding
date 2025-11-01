@@ -2,6 +2,7 @@ import pygame
 
 from horse import Horse
 from path import Path
+from controls import Controls
 from constants import FPS, GRASS_COLOR, HORSE_OFFSET
 
 
@@ -17,13 +18,25 @@ class Game:
         # Разделяем экран горизонтально пополам
         mid_y = self.screen_height // 2
         
+        # Создаем объекты управления для лошадей
+        controls1 = Controls(
+            left=pygame.K_LEFT,
+            right=pygame.K_RIGHT,
+            jump=pygame.K_UP
+        )
+        controls2 = Controls(
+            left=pygame.K_a,
+            right=pygame.K_d,
+            jump=pygame.K_w
+        )
+        
         # Верхняя дорожка и лошадь
         horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
-        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width)
+        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=controls1)
         
         # Нижняя дорожка и лошадь
         horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
-        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width)
+        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=controls2)
 
         # Для передачи delta time
         self.dt = 0
@@ -41,38 +54,9 @@ class Game:
                     # Выход из полноэкранного режима по ESC
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    # Управление первой лошадью (стрелки)
-                    if event.key == pygame.K_RIGHT:
-                        if self.path1.horse.facing_right:
-                            self.path1.horse.accelerate()
-                        else:
-                            self.path1.horse.decelerate()
-                    if event.key == pygame.K_LEFT:
-                        if self.path1.horse.facing_right:
-                            self.path1.horse.decelerate()
-                        else:
-                            self.path1.horse.accelerate()
-                    if event.key == pygame.K_UP:
-                        self.path1.horse.barrier()
-                    
-                    # Управление второй лошадью (WASD)
-                    if event.key == pygame.K_d:
-                        if self.path2.horse.facing_right:
-                            self.path2.horse.accelerate()
-                        else:
-                            self.path2.horse.decelerate()
-                    if event.key == pygame.K_a:
-                        if self.path2.horse.facing_right:
-                            self.path2.horse.decelerate()
-                        else:
-                            self.path2.horse.accelerate()
-                    if event.key == pygame.K_w:
-                        self.path2.horse.barrier()
-            
-            # Обработка непрерывного ввода
-            # keys = pygame.key.get_pressed()
-            # if keys[pygame.K_RIGHT]:
-            #     self.horse.set_animation('start')
+                    # Передаем события в Path для обработки
+                    self.path1.handle_event(event)
+                    self.path2.handle_event(event)
             
             # Обновление с передачей delta time
             self.path1.update(self.dt)
