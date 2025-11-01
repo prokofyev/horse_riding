@@ -24,13 +24,27 @@ class Path:
         speed = self._get_background_speed()
         if speed != 0:
             direction = -1 if self.horse.facing_right else 1
-            dx = int(direction * speed * dt)
+            base_dx = direction * speed * dt
         else:
-            dx = 0
+            base_dx = 0
 
-        # Двигаем траву
+        # Двигаем траву с учетом перспективы (ниже = быстрее)
         for sprite in list(self.grass_sprites):
+            # Вычисляем множитель перспективы на основе Y-координаты
+            # Трава ниже (ближе к max_y) движется быстрее
+            y_range = self.max_y - self.min_y
+            if y_range > 0:
+                # Нормализуем: 0 (min_y) до 1 (max_y)
+                perspective_factor = (sprite.rect.y - self.min_y) / y_range
+                # Применяем множитель: от 0.5 (верх) до 1.5 (низ) для усиления эффекта
+                perspective_multiplier = 0.5 + perspective_factor
+            else:
+                perspective_multiplier = 1.0
+            
+            # Применяем перспективу к скорости
+            dx = int(base_dx * perspective_multiplier)
             sprite.rect.x += dx
+            
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > SCREEN_WIDTH + self.offscreen_margin:
                 self.grass_sprites.remove(sprite)
 
@@ -90,7 +104,7 @@ class Path:
             return 220
         # Поворот — фон почти стоит
         if anim in ['turn']:
-            return 40
+            return 0
         # idle и прочее — фон не движется
         return 0
 
