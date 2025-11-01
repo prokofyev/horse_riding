@@ -19,9 +19,12 @@ class Path:
         
         # Вертикальная полоса для травы (у земли в пределах области)
         area_height = bottom_y - top_y
-        # Трава занимает нижние 25-30% области
+
         self.min_y = int(top_y + area_height * 0.65)
-        self.max_y = int(top_y + area_height * 0.9)
+        self.max_y = int(top_y + area_height * 0.99)
+
+        self.horse_shadow_min_y = int(top_y + area_height * 0.78)
+        self.horse_shadow_max_y = int(top_y + area_height * 0.9)
 
         # Отступы за пределы экрана для спауна/очистки
         self.offscreen_margin = 64
@@ -40,10 +43,8 @@ class Path:
             # Трава ниже (ближе к max_y) движется быстрее
             y_range = self.max_y - self.min_y
             if y_range > 0:
-                # Нормализуем: 0 (min_y) до 1 (max_y)
-                perspective_factor = (sprite.rect.y - self.min_y) / y_range
-                # Применяем множитель: от 0.5 (верх) до 1.5 (низ) для усиления эффекта
-                perspective_multiplier = 0.5 + perspective_factor
+                perspective_factor = (sprite.rect.bottom - self.min_y) / y_range
+                perspective_multiplier = perspective_factor + 1.0
             else:
                 perspective_multiplier = 1.0
             
@@ -69,8 +70,19 @@ class Path:
         self.grass_sprites.draw(surface)
         self.horse.draw(surface)
 
+        pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
+        pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)
+
+        pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_min_y), (self.screen_width, self.horse_shadow_min_y), 1)
+        pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_max_y), (self.screen_width, self.horse_shadow_max_y), 1)
+
     def _spawn_grass(self):
-        y = random.randint(self.min_y, self.max_y)
+        y = None
+        while y is None:
+            y = random.randint(self.min_y, self.max_y)
+            if y > self.horse_shadow_min_y and y < self.horse_shadow_max_y:
+                y = None
+
         if self.horse.facing_right:
             # Двигаемся направо -> фон идет влево: спавним справа
             x = self.screen_width + self.offscreen_margin
@@ -82,15 +94,19 @@ class Path:
 
     def _schedule_next_spawn(self, speed):
         # Чем больше скорость, тем чаще спавним
-        # Базовый интервал (в секундах)
-        if speed <= 0:
-            self.next_spawn = 0.5
-            return
-        # Нормируем: 50..400 px/s -> 0.6..0.15 сек
-        t = max(50, min(400, speed))
-        base = 0.6 - (t - 50) * (0.45 / 350.0)
+
+        MIN_SPAWN_INTERVAL = 0.5
+        MAX_SPAWN_INTERVAL = 1.5
+
+        MIN_SPEED = 0
+        MAX_SPEED = 400
+
+        t = max(MIN_SPEED, min(MAX_SPEED, speed))
+        base = MAX_SPAWN_INTERVAL - (t - MIN_SPEED) * ((MAX_SPAWN_INTERVAL - MIN_SPAWN_INTERVAL) / 
+            (MAX_SPEED - MIN_SPEED))
+
         jitter = random.uniform(-0.1, 0.1)
-        self.next_spawn = max(0.05, base + jitter)
+        self.next_spawn = max(MIN_SPAWN_INTERVAL, base + jitter)
 
     def _get_background_speed(self):
         # Пиксели в секунду для сдвига бэкграунда
@@ -98,9 +114,9 @@ class Path:
         if anim in ['gallop']:
             return 380
         if anim in ['trot']:
-            return 240
+            return 260
         if anim in ['walk']:
-            return 200
+            return 150
         if anim in ['start_moving']:
             return 120
         if anim in ['stop_moving']:
@@ -108,10 +124,7 @@ class Path:
         # Прыжок/барьер пусть сохраняет текущую видимую скорость
         if anim in ['barrier']:
             return 220
-        # Поворот — фон почти стоит
-        if anim in ['turn']:
-            return 0
-        # idle и прочее — фон не движется
+
         return 0
 
 

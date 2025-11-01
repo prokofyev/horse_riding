@@ -2,7 +2,7 @@ import pygame
 
 from horse import Horse
 from path import Path
-from constants import FPS, HORSE_OFFSET
+from constants import FPS, GRASS_COLOR, HORSE_OFFSET
 
 
 class Game:
@@ -79,7 +79,7 @@ class Game:
             self.path2.update(self.dt)
             
             # Отрисовка
-            self.screen.fill((149, 178, 98))
+            self.screen.fill(GRASS_COLOR)
             # Рисуем обе дорожки
             self.path1.draw(self.screen)
             self.path2.draw(self.screen)
