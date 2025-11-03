@@ -1,8 +1,9 @@
 import random
 import pygame
 
-from constants import MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE
+from constants import MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE
 from grass import Grass
+from barrier import Barrier
 
 
 class Path:
@@ -11,8 +12,11 @@ class Path:
         self.screen_width = screen_width
         self.controls = controls
         self.grass_sprites = pygame.sprite.Group()
+        self.barrier_sprites = pygame.sprite.Group()
         self.spawn_distance = 0.0
+        self.barrier_spawn_distance = 0.0
         self._schedule_next_spawn()
+        self._schedule_next_barrier_spawn()
 
         # Границы области для этой дорожки
         self.top_y = top_y
@@ -56,12 +60,32 @@ class Path:
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.grass_sprites.remove(sprite)
 
+        for sprite in list(self.barrier_sprites):
+            y_range = self.max_y - self.min_y
+            if y_range > 0:
+                perspective_factor = (sprite.rect.bottom - self.min_y) / y_range
+                perspective_multiplier = perspective_factor + 1.0
+            else:
+                perspective_multiplier = 1.0
+                
+            dx = int(base_dx * perspective_multiplier)
+            sprite.rect.x += dx
+            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
+                self.barrier_sprites.remove(sprite)
+
         # Спавним новую траву
         self.spawn_distance += abs(base_dx)
         if self.spawn_distance >= self.next_spawn_distance:
             self.spawn_distance = 0.0
             self._spawn_grass()
             self._schedule_next_spawn()
+
+        # Спавним новый барьер (реже)
+        self.barrier_spawn_distance += abs(base_dx)
+        if self.barrier_spawn_distance >= self.next_barrier_spawn_distance:
+            self.barrier_spawn_distance = 0.0
+            self._spawn_barrier()
+            self._schedule_next_barrier_spawn()
 
         # Обновляем лошадь (анимации и логику)
         self.horse.update(dt)
@@ -85,12 +109,13 @@ class Path:
     def draw(self, surface):
         self.grass_sprites.draw(surface)
         self.horse.draw(surface)
+        self.barrier_sprites.draw(surface)
 
-        pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
-        pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)
+        # pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
+        # pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)
 
-        pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_min_y), (self.screen_width, self.horse_shadow_min_y), 1)
-        pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_max_y), (self.screen_width, self.horse_shadow_max_y), 1)
+        # pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_min_y), (self.screen_width, self.horse_shadow_min_y), 1)
+        # pygame.draw.line(surface, (0, 100, 100), (0, self.horse_shadow_max_y), (self.screen_width, self.horse_shadow_max_y), 1)
 
     def _spawn_grass(self):
         y = None
@@ -108,8 +133,20 @@ class Path:
         grass = Grass((x, y))
         self.grass_sprites.add(grass)
 
+    def _spawn_barrier(self):
+        y = self.horse_shadow_max_y
+        if self.horse.facing_right:
+            x = self.screen_width + self.offscreen_margin
+        else:
+            x = -self.offscreen_margin
+        barrier = Barrier((x, y))
+        self.barrier_sprites.add(barrier)
+
     def _schedule_next_spawn(self):
         self.next_spawn_distance = random.uniform(MIN_SPAWN_DISTANCE, MAX_SPAWN_DISTANCE)
+
+    def _schedule_next_barrier_spawn(self):
+        self.next_barrier_spawn_distance = random.uniform(BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE)
 
     
 

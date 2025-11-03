@@ -149,6 +149,11 @@ class Horse(pygame.sprite.Sprite):
             return 80
 
         if anim in ['barrier']:
-            return 220
+            if self.queued_animation in ['gallop']:
+                return 380 * self.gallop_speed_factor
+            if self.queued_animation in ['trot']:
+                return 260
+            if self.queued_animation in ['walk']:
+                return 140  
 
         return 0
