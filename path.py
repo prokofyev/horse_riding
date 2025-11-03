@@ -1,6 +1,7 @@
 import random
 import pygame
 
+from constants import MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE
 from grass import Grass
 
 
@@ -10,9 +11,8 @@ class Path:
         self.screen_width = screen_width
         self.controls = controls
         self.grass_sprites = pygame.sprite.Group()
-        self.spawn_timer = 0.0
-        self.next_spawn = 0.0
-        self._schedule_next_spawn(0)
+        self.spawn_distance = 0.0
+        self._schedule_next_spawn()
 
         # Границы области для этой дорожки
         self.top_y = top_y
@@ -56,13 +56,12 @@ class Path:
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.grass_sprites.remove(sprite)
 
-        # Спавним новую траву в зависимости от скорости
-        if speed > 0:
-            self.spawn_timer += dt
-            if self.spawn_timer >= self.next_spawn:
-                self.spawn_timer = 0.0
-                self._spawn_grass()
-                self._schedule_next_spawn(speed)
+        # Спавним новую траву
+        self.spawn_distance += abs(base_dx)
+        if self.spawn_distance >= self.next_spawn_distance:
+            self.spawn_distance = 0.0
+            self._spawn_grass()
+            self._schedule_next_spawn()
 
         # Обновляем лошадь (анимации и логику)
         self.horse.update(dt)
@@ -109,21 +108,8 @@ class Path:
         grass = Grass((x, y))
         self.grass_sprites.add(grass)
 
-    def _schedule_next_spawn(self, speed):
-        # Чем больше скорость, тем чаще спавним
-
-        MIN_SPAWN_INTERVAL = 0.5
-        MAX_SPAWN_INTERVAL = 1.5
-
-        MIN_SPEED = 0
-        MAX_SPEED = 400
-
-        t = max(MIN_SPEED, min(MAX_SPEED, speed))
-        base = MAX_SPAWN_INTERVAL - (t - MIN_SPEED) * ((MAX_SPAWN_INTERVAL - MIN_SPAWN_INTERVAL) / 
-            (MAX_SPEED - MIN_SPEED))
-
-        jitter = random.uniform(-0.1, 0.1)
-        self.next_spawn = max(MIN_SPAWN_INTERVAL, base + jitter)
+    def _schedule_next_spawn(self):
+        self.next_spawn_distance = random.uniform(MIN_SPAWN_DISTANCE, MAX_SPAWN_DISTANCE)
 
     
 
