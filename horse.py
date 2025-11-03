@@ -24,6 +24,7 @@ class Horse(pygame.sprite.Sprite):
         }
         
         self.facing_right = True
+        self.gallop_speed_factor = 1
 
         self.current_animation = 'idle'
         self.image = self.animations[self.current_animation].get_current_frame()
@@ -110,6 +111,8 @@ class Horse(pygame.sprite.Sprite):
             self.set_animation('trot')  
         elif self.current_animation in ['trot']:
             self.set_animation('gallop')
+        elif self.current_animation in ['gallop']:
+            self.gallop_speed_factor += 0.1
 
     def decelerate(self):
         if self.current_animation in ['idle', 'idle2', 'idle3']:
@@ -121,9 +124,31 @@ class Horse(pygame.sprite.Sprite):
         elif self.current_animation in ['trot']:
             self.set_animation('walk')
         elif self.current_animation in ['gallop']:
-            self.set_animation('trot')
+            if self.gallop_speed_factor > 1:
+                self.gallop_speed_factor -= 0.1
+            else:
+                self.set_animation('trot')
 
     def barrier(self):
         if self.current_animation in ['gallop', 'trot', 'walk']:
             self.queued_animation = self.current_animation
             self.set_animation('barrier')
+
+    def get_speed(self):
+        # Пиксели в секунду для сдвига бэкграунда
+        anim = self.current_animation
+        if anim in ['gallop']:
+            return 380 * self.gallop_speed_factor
+        if anim in ['trot']:
+            return 260
+        if anim in ['walk']:
+            return 140
+        if anim in ['start_moving']:
+            return 120
+        if anim in ['stop_moving']:
+            return 80
+
+        if anim in ['barrier']:
+            return 220
+
+        return 0

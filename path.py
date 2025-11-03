@@ -31,7 +31,7 @@ class Path:
         self.offscreen_margin = 64
 
     def update(self, dt):
-        speed = self._get_background_speed()
+        speed = self.horse.get_speed()
         if speed != 0:
             direction = -1 if self.horse.facing_right else 1
             base_dx = direction * speed * dt
@@ -125,23 +125,6 @@ class Path:
         jitter = random.uniform(-0.1, 0.1)
         self.next_spawn = max(MIN_SPAWN_INTERVAL, base + jitter)
 
-    def _get_background_speed(self):
-        # Пиксели в секунду для сдвига бэкграунда
-        anim = self.horse.current_animation
-        if anim in ['gallop']:
-            return 380
-        if anim in ['trot']:
-            return 260
-        if anim in ['walk']:
-            return 150
-        if anim in ['start_moving']:
-            return 120
-        if anim in ['stop_moving']:
-            return 80
-        # Прыжок/барьер пусть сохраняет текущую видимую скорость
-        if anim in ['barrier']:
-            return 220
-
-        return 0
+    
 
 
