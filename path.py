@@ -1,7 +1,7 @@
 import random
 import pygame
 
-from constants import MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE
+from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE
 from grass import Grass
 from barrier import Barrier
 
@@ -30,6 +30,8 @@ class Path:
 
         self.horse_shadow_min_y = int(top_y + area_height * 0.78)
         self.horse_shadow_max_y = int(top_y + area_height * 0.9)
+
+        self.barrier_max_y = int(top_y + area_height * 0.9)
 
         # Отступы за пределы экрана для спауна/очистки
         self.offscreen_margin = 64
@@ -72,6 +74,15 @@ class Path:
             sprite.rect.x += dx
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.barrier_sprites.remove(sprite)
+
+        if self.horse.current_animation in ['trot', 'gallop'] or \
+                self.horse.current_animation in ['barrier'] and self.horse.is_near_ground():
+            collided = False
+            for barrier in self.barrier_sprites:
+                if self.horse.collide_barrier(barrier):
+                    collided = True
+            if collided:
+                self.horse.make_fall()
 
         # Спавним новую траву
         self.spawn_distance += abs(base_dx)
@@ -134,7 +145,7 @@ class Path:
         self.grass_sprites.add(grass)
 
     def _spawn_barrier(self):
-        y = self.horse_shadow_max_y
+        y = self.barrier_max_y
         if self.horse.facing_right:
             x = self.screen_width + self.offscreen_margin
         else:

@@ -2,7 +2,7 @@ import pygame
 import random
 import time
 from pygame_animation import Animation, AnimationManager
-from constants import IDLE_RANDOM_MIN_INTERVAL, IDLE_RANDOM_MAX_INTERVAL
+from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, IDLE_RANDOM_MIN_INTERVAL, IDLE_RANDOM_MAX_INTERVAL
 
 
 class Horse(pygame.sprite.Sprite):
@@ -21,6 +21,7 @@ class Horse(pygame.sprite.Sprite):
             'gallop': AnimationManager.load_animation('assets/horse/gallop', fps=25, loop=True),
             'barrier': AnimationManager.load_animation('assets/horse/barrier', fps=50, loop=False),
             'turn': AnimationManager.load_animation('assets/horse/turn', fps=16, loop=False),
+            'fall': AnimationManager.load_animation('assets/horse/fall', fps=16, loop=False),
         }
         
         self.facing_right = True
@@ -63,6 +64,9 @@ class Horse(pygame.sprite.Sprite):
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
+        pygame.draw.line(surface, (100, 100, 100), (self.rect.left + HORSE_MARGIN_RIGHT, 0), (self.rect.left + HORSE_MARGIN_RIGHT, 1000), 1)
+        pygame.draw.line(surface, (100, 100, 100), (self.rect.right - HORSE_MARGIN_LEFT, 0), (self.rect.right - HORSE_MARGIN_LEFT, 1000), 1)
+
     
     def set_animation(self, animation_name):
         if animation_name in self.animations and animation_name != self.current_animation:
@@ -147,6 +151,8 @@ class Horse(pygame.sprite.Sprite):
             return 120
         if anim in ['stop_moving']:
             return 80
+        if anim in ['fall']:
+            return 0
 
         if anim in ['barrier']:
             if self.queued_animation in ['gallop']:
@@ -157,3 +163,22 @@ class Horse(pygame.sprite.Sprite):
                 return 140  
 
         return 0
+
+    def is_start_frame(self, limit):
+        return self.animations[self.current_animation].current_frame < limit
+
+    def is_end_frame(self, limit):
+        return self.animations[self.current_animation].current_frame >= \
+            len(self.animations[self.current_animation].frames) - limit
+
+    def is_near_ground(self):
+        return self.is_start_frame(10) or self.is_end_frame(10)
+
+    def collide_barrier(self, barrier):
+        return self.rect.right - HORSE_MARGIN_RIGHT > barrier.rect.left and \
+                    self.rect.left + HORSE_MARGIN_LEFT < barrier.rect.right
+
+    def make_fall(self):
+        self.set_animation('fall')
+        self.gallop_speed_factor = 1
+        self.queued_animation = None # если упал в прыжке
