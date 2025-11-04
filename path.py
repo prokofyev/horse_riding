@@ -114,7 +114,7 @@ class Path:
 
         # Спавним новый барьер (реже)
         self.barrier_spawn_distance += abs(base_dx)
-        if self.barrier_spawn_distance >= self.next_barrier_spawn_distance:
+        if self.barrier_spawn_distance >= self.next_barrier_spawn_distance and not self.flag_spawned:
             self.barrier_spawn_distance = 0.0
             self._spawn_barrier()
             self._schedule_next_barrier_spawn()
