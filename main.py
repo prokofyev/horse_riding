@@ -29,14 +29,23 @@ class Game:
             right=pygame.K_d,
             jump=pygame.K_w
         )
+
+        self._winner_path = None
+        def get_winner():
+            return self._winner_path
+        def set_winner(path):
+            if self._winner_path is None:
+                self._winner_path = path
         
         # Верхняя дорожка и лошадь
         horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
-        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=controls1)
+        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=controls1, 
+            get_winner=get_winner, set_winner=set_winner)
         
         # Нижняя дорожка и лошадь
         horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
-        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=controls2)
+        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=controls2, 
+            get_winner=get_winner, set_winner=set_winner)
 
         # Для передачи delta time
         self.dt = 0

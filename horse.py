@@ -64,8 +64,8 @@ class Horse(pygame.sprite.Sprite):
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
-        pygame.draw.line(surface, (100, 100, 100), (self.rect.left + HORSE_MARGIN_RIGHT, 0), (self.rect.left + HORSE_MARGIN_RIGHT, 1000), 1)
-        pygame.draw.line(surface, (100, 100, 100), (self.rect.right - HORSE_MARGIN_LEFT, 0), (self.rect.right - HORSE_MARGIN_LEFT, 1000), 1)
+        # pygame.draw.line(surface, (100, 100, 100), (self.rect.left + HORSE_MARGIN_RIGHT, 0), (self.rect.left + HORSE_MARGIN_RIGHT, 1000), 1)
+        # pygame.draw.line(surface, (100, 100, 100), (self.rect.right - HORSE_MARGIN_LEFT, 0), (self.rect.right - HORSE_MARGIN_LEFT, 1000), 1)
 
     
     def set_animation(self, animation_name):

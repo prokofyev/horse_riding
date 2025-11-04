@@ -8,10 +8,12 @@ from flag import Flag
 
 
 class Path:
-    def __init__(self, horse, top_y, bottom_y, screen_width, controls):
+    def __init__(self, horse, top_y, bottom_y, screen_width, controls, get_winner, set_winner):
         self.horse = horse
         self.screen_width = screen_width
         self.controls = controls
+        self.get_winner = get_winner
+        self.set_winner = set_winner
         self.grass_sprites = pygame.sprite.Group()
         self.barrier_sprites = pygame.sprite.Group()
         self.spawn_distance = 0.0
@@ -21,6 +23,7 @@ class Path:
         self.path_distance = 100
         self.traveled_distance = 0
         self.flag_spawned = False
+        self.is_winner = False
 
         # Границы области для этой дорожки
         self.top_y = top_y
@@ -116,6 +119,22 @@ class Path:
             self._spawn_barrier()
             self._schedule_next_barrier_spawn()
 
+        # Проверка прохождения флага (победа)
+        if not self.is_winner and self.get_winner() is None:
+            for obj in list(self.grass_sprites):
+                if isinstance(obj, Flag):
+                    # Условие: лошадь проехала мимо флага
+                    if self.horse.facing_right:
+                        if self.horse.rect.right >= obj.rect.left:
+                            self.set_winner(self)
+                            self.is_winner = True
+                            break
+                    else:
+                        if self.horse.rect.left <= obj.rect.right:
+                            self.set_winner(self)
+                            self.is_winner = True
+                            break
+
         if self.traveled_distance >= self.path_distance:
             self._spawn_flag()
 
@@ -166,6 +185,18 @@ class Path:
             fill_w = int(bar_width * ratio)
             if fill_w > 0:
                 pygame.draw.rect(surface, (80, 200, 80), (bar_x, bar_y, fill_w, bar_height))
+
+        # Сообщение ПОБЕДА по центру дорожки
+        if self.is_winner:
+            font = pygame.font.SysFont(None, 250)
+            text_surface = font.render("ПОБЕДА", True, (255, 255, 255))
+            shadow_surface = font.render("ПОБЕДА", True, (0, 0, 0))
+            center_x = self.screen_width // 2
+            center_y = (self.top_y + self.bottom_y) // 2
+            text_rect = text_surface.get_rect(center=(center_x, center_y))
+            shadow_rect = shadow_surface.get_rect(center=(center_x + 2, center_y + 2))
+            surface.blit(shadow_surface, shadow_rect)
+            surface.blit(text_surface, text_rect)
 
         # pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
         # pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)
