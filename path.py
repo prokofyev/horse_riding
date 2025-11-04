@@ -4,6 +4,7 @@ import pygame
 from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE
 from grass import Grass
 from barrier import Barrier
+from flag import Flag
 
 
 class Path:
@@ -17,8 +18,9 @@ class Path:
         self.barrier_spawn_distance = 0.0
         self._schedule_next_spawn()
         self._schedule_next_barrier_spawn()
-        self.path_distance = 10000
+        self.path_distance = 100
         self.traveled_distance = 0
+        self.flag_spawned = False
 
         # Границы области для этой дорожки
         self.top_y = top_y
@@ -56,6 +58,12 @@ class Path:
 
         # Двигаем траву с учетом перспективы (ниже = быстрее)
         for sprite in list(self.grass_sprites):
+            # Обновляем анимацию объектов, если есть
+            if hasattr(sprite, 'update'):
+                try:
+                    sprite.update(dt)
+                except TypeError:
+                    pass
             # Вычисляем множитель перспективы на основе Y-координаты
             # Трава ниже (ближе к max_y) движется быстрее
             y_range = self.max_y - self.min_y
@@ -107,6 +115,9 @@ class Path:
             self.barrier_spawn_distance = 0.0
             self._spawn_barrier()
             self._schedule_next_barrier_spawn()
+
+        if self.traveled_distance >= self.path_distance:
+            self._spawn_flag()
 
         # Обновляем лошадь (анимации и логику)
         self.horse.update(dt)
@@ -186,6 +197,19 @@ class Path:
             x = -self.offscreen_margin
         barrier = Barrier((x, y))
         self.barrier_sprites.add(barrier)
+
+    def _spawn_flag(self):
+        if self.flag_spawned:
+            return 
+
+        y = self.horse_shadow_min_y
+        if self.horse.facing_right:
+            x = self.screen_width + self.offscreen_margin
+        else:
+            x = -self.offscreen_margin
+        flag = Flag((x, y))
+        self.grass_sprites.add(flag)
+        self.flag_spawned = True
 
     def _schedule_next_spawn(self):
         self.next_spawn_distance = random.uniform(MIN_SPAWN_DISTANCE, MAX_SPAWN_DISTANCE)
