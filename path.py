@@ -17,6 +17,8 @@ class Path:
         self.barrier_spawn_distance = 0.0
         self._schedule_next_spawn()
         self._schedule_next_barrier_spawn()
+        self.path_distance = 10000
+        self.traveled_distance = 0
 
         # Границы области для этой дорожки
         self.top_y = top_y
@@ -43,6 +45,14 @@ class Path:
             base_dx = direction * speed * dt
         else:
             base_dx = 0
+
+        self.traveled_distance -= base_dx # движение направо с минусом
+        # Держим прогресс в пределах дистанции
+        if self.path_distance > 0:
+            if self.traveled_distance < 0:
+                self.traveled_distance = 0
+            elif self.traveled_distance > self.path_distance:
+                self.traveled_distance = self.path_distance
 
         # Двигаем траву с учетом перспективы (ниже = быстрее)
         for sprite in list(self.grass_sprites):
@@ -121,6 +131,30 @@ class Path:
         self.grass_sprites.draw(surface)
         self.horse.draw(surface)
         self.barrier_sprites.draw(surface)
+
+        # Прогресс-бар расстояния (для верхней дорожки — внизу области)
+        if self.path_distance > 0:
+            bar_margin_x = 20
+            bar_margin_y = 10
+            bar_height = 10
+            bar_width = max(10, self.screen_width - bar_margin_x * 2)
+            bar_x = bar_margin_x
+            # По умолчанию сверху области дорожки
+            bar_y = self.top_y + bar_margin_y
+            # Если это верхняя дорожка (начинается от самого верха экрана), рисуем полосу внизу ее области
+            if self.top_y == 0:
+                bar_y = self.bottom_y - bar_margin_y - bar_height
+
+            # Фон и рамка
+            pygame.draw.rect(surface, (40, 40, 40), (bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(surface, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height), 1)
+
+            # Заполнение
+            ratio = self.traveled_distance / float(self.path_distance)
+            ratio = max(0.0, min(1.0, ratio))
+            fill_w = int(bar_width * ratio)
+            if fill_w > 0:
+                pygame.draw.rect(surface, (80, 200, 80), (bar_x, bar_y, fill_w, bar_height))
 
         # pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
         # pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)
