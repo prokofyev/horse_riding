@@ -20,7 +20,7 @@ class Path:
         self.barrier_spawn_distance = 0.0
         self._schedule_next_spawn()
         self._schedule_next_barrier_spawn()
-        self.path_distance = 100
+        self.path_distance = 10000
         self.traveled_distance = 0
         self.flag_spawned = False
         self.is_winner = False
@@ -124,16 +124,10 @@ class Path:
             for obj in list(self.grass_sprites):
                 if isinstance(obj, Flag):
                     # Условие: лошадь проехала мимо флага
-                    if self.horse.facing_right:
-                        if self.horse.rect.right >= obj.rect.left:
-                            self.set_winner(self)
-                            self.is_winner = True
-                            break
-                    else:
-                        if self.horse.rect.left <= obj.rect.right:
-                            self.set_winner(self)
-                            self.is_winner = True
-                            break
+                    if self.horse.rect.right >= obj.rect.left:
+                        self.set_winner(self)
+                        self.is_winner = True
+                        break
 
         if self.traveled_distance >= self.path_distance:
             self._spawn_flag()
