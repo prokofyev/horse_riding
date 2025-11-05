@@ -1,7 +1,9 @@
 import random
+import os
+import glob
 import pygame
 
-from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE
+from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, MAX_SPAWN_DISTANCE, MIN_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, BARRIER_MAX_SPAWN_DISTANCE, SKY_COLOR, GRASS_COLOR
 from grass import Grass
 from barrier import Barrier
 from flag import Flag
@@ -20,7 +22,7 @@ class Path:
         self.barrier_spawn_distance = 0.0
         self._schedule_next_spawn()
         self._schedule_next_barrier_spawn()
-        self.path_distance = 10000
+        self.path_distance = 50000
         self.traveled_distance = 0
         self.flag_spawned = False
         self.is_winner = False
@@ -39,9 +41,14 @@ class Path:
         self.horse_shadow_max_y = int(top_y + area_height * 0.9)
 
         self.barrier_max_y = int(top_y + area_height * 0.9)
+        self.sky_max_y = int(top_y + area_height * 0.5)
 
         # Отступы за пределы экрана для спауна/очистки
         self.offscreen_margin = 64
+
+        # Фоновое изображение неба
+        self.sky_bg = self._load_sky_background()
+        self._sky_bg_scaled = None
 
     def update(self, dt):
         speed = self.horse.get_speed()
@@ -152,6 +159,42 @@ class Path:
                 self.horse.barrier()
 
     def draw(self, surface):
+        # Небо (изображение из assets/backgrounds) или цветовой бэкап
+        sky_height = self.sky_max_y - self.top_y
+        if sky_height > 0:
+            if self.sky_bg is not None:
+                self._ensure_sky_scaled(sky_height)
+                if self._sky_bg_scaled:
+                    tile_w = self._sky_bg_scaled.get_width()
+                    if tile_w >= self.screen_width:
+                        # Если изображение шире экрана — обрезаем по ширине
+                        src_rect = pygame.Rect(0, 0, self.screen_width, sky_height)
+                        surface.blit(self._sky_bg_scaled, (0, self.top_y), src_rect)
+                    else:
+                        # Если уже — повторяем по горизонтали, чередуя с отражением
+                        x = 0
+                        use_flip = False
+                        while x < self.screen_width:
+                            tile_surface = self._sky_bg_scaled_flipped if use_flip and self._sky_bg_scaled_flipped else self._sky_bg_scaled
+                            remaining = self.screen_width - x
+                            draw_w = tile_surface.get_width()
+                            if draw_w > remaining:
+                                src_rect = pygame.Rect(0, 0, remaining, sky_height)
+                                surface.blit(tile_surface, (x, self.top_y), src_rect)
+                                break
+                            else:
+                                surface.blit(tile_surface, (x, self.top_y))
+                            x += draw_w
+                            use_flip = not use_flip
+            else:
+                pygame.draw.rect(surface, SKY_COLOR, (0, self.top_y, self.screen_width, sky_height))
+
+        # Почва/трава как фон области от границы неба до низа дорожки
+        ground_y = self.sky_max_y
+        ground_h = max(0, self.bottom_y - ground_y)
+        if ground_h > 0:
+            pygame.draw.rect(surface, GRASS_COLOR, (0, ground_y, self.screen_width, ground_h))
+
         self.grass_sprites.draw(surface)
         self.horse.draw(surface)
         self.barrier_sprites.draw(surface)
@@ -191,6 +234,48 @@ class Path:
             shadow_rect = shadow_surface.get_rect(center=(center_x + 2, center_y + 2))
             surface.blit(shadow_surface, shadow_rect)
             surface.blit(text_surface, text_rect)
+
+    def _load_sky_background(self):
+        """Загружает случайное изображение неба из assets/backgrounds."""
+        try:
+            folder = os.path.join('assets', 'backgrounds')
+            candidates = sorted(glob.glob(os.path.join(folder, '*.png')))
+            if not candidates:
+                return None
+            path = random.choice(candidates)
+            img = pygame.image.load(path).convert()
+            return img
+        except Exception as e:
+            print(f"Error loading sky background: {e}")
+            return None
+
+    def _ensure_sky_scaled(self, sky_height):
+        """Готовит масштабированную версию неба под фиксированную высоту sky_height,
+        сохраняя соотношение сторон; ширина может быть больше экрана и будет обрезана при отрисовке."""
+        if self.sky_bg is None:
+            self._sky_bg_scaled = None
+            return
+        # Масштабируем по высоте, сохраняя аспект
+        src_w = self.sky_bg.get_width()
+        src_h = self.sky_bg.get_height()
+        if src_h <= 0:
+            self._sky_bg_scaled = None
+            return
+        target_h = sky_height
+        target_w = int(src_w * (target_h / float(src_h)))
+        # Если уже есть нужного размера — не пересоздаём
+        if (self._sky_bg_scaled is None or
+            self._sky_bg_scaled.get_height() != target_h or
+            self._sky_bg_scaled.get_width() != target_w):
+            try:
+                self._sky_bg_scaled = pygame.transform.smoothscale(self.sky_bg, (target_w, target_h))
+            except Exception:
+                self._sky_bg_scaled = pygame.transform.scale(self.sky_bg, (target_w, target_h))
+            # Подготовим отраженную версию для чередования
+            try:
+                self._sky_bg_scaled_flipped = pygame.transform.flip(self._sky_bg_scaled, True, False)
+            except Exception:
+                self._sky_bg_scaled_flipped = None
 
         # pygame.draw.line(surface, (100, 100, 100), (0, self.min_y), (self.screen_width, self.min_y), 1)
         # pygame.draw.line(surface, (100, 100, 100), (0, self.max_y), (self.screen_width, self.max_y), 1)

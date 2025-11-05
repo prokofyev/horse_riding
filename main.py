@@ -81,8 +81,8 @@ class Game:
                 self.path1.update(self.dt)
                 self.path2.update(self.dt)
             
-            # Отрисовка
-            self.screen.fill(GRASS_COLOR)
+            # Отрисовка (фон рисуют сами Path: небо и почву)
+            self.screen.fill((0, 0, 0))
             # Рисуем обе дорожки
             self.path1.draw(self.screen)
             self.path2.draw(self.screen)
