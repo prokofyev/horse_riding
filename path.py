@@ -1,15 +1,16 @@
 import pygame
 
-from constants import HORSE_SHADOW_MAX_Y_FRAC, HORSE_SHADOW_MIN_Y_FRAC, SKY_COLOR, GRASS_COLOR, SKY_PROPORTION
+from constants import HORSE_OFFSET_X, HORSE_SHADOW_MAX_Y_FRAC, HORSE_SHADOW_MIN_Y_FRAC, HORSE_Y_FRAC, SKY_COLOR, GRASS_COLOR, SKY_PROPORTION
 from grass import Grass
 from barrier import Barrier
 from flag import Flag
+from horse import Horse
 from track_plan import TrackPlan
 
 
 class Path:
-    def __init__(self, horse, top_y, bottom_y, screen_width, controls, race_controller, plan: TrackPlan):
-        self.horse = horse
+    def __init__(self, top_y, bottom_y, screen_width, controls, race_controller, plan: TrackPlan):
+        self.horse = Horse((HORSE_OFFSET_X, top_y + int(HORSE_Y_FRAC * (bottom_y - top_y))))
         self.screen_width = screen_width
         self.controls = controls
         self.race_controller = race_controller

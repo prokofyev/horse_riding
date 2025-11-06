@@ -1,10 +1,9 @@
 import pygame
 import time
 
-from horse import Horse
 from path import Path
 from controls import Controls
-from constants import AUTO_GAME_RESTART_SEC, BARRIER_MAX_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, FPS, GRASS_MAX_SPAWN_DISTANCE, HORSE_OFFSET, GRASS_MIN_SPAWN_DISTANCE, TRACK_TOTAL_DISTANCE
+from constants import AUTO_GAME_RESTART_SEC, BARRIER_MAX_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, FPS, GRASS_MAX_SPAWN_DISTANCE, GRASS_MIN_SPAWN_DISTANCE, TRACK_TOTAL_DISTANCE
 from track_plan import TrackPlan
 from race_controller import RaceController
 
@@ -99,11 +98,11 @@ class Game:
             min_barrier_spacing=BARRIER_MIN_SPAWN_DISTANCE,
             max_barrier_spacing=BARRIER_MAX_SPAWN_DISTANCE,
         )
-        horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
-        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1,
+
+        self.path1 = Path(top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1,
             race_controller=self.race_controller, plan=plan)
-        horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
-        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2,
+
+        self.path2 = Path(top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2,
             race_controller=self.race_controller, plan=plan)
         
         # Новый обратный отсчет

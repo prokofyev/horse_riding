@@ -29,7 +29,7 @@ class Horse(pygame.sprite.Sprite):
 
         self.current_animation = 'idle'
         self.image = self.animations[self.current_animation].get_current_frame()
-        self.rect = self.image.get_rect(topleft=position)
+        self.rect = self.image.get_rect(bottomleft=position)
         
         # Переменные для случайной смены idle анимации
         self.idle_start_time = time.time()
