@@ -104,8 +104,8 @@ class Path:
 
         # Проверка прохождения флага (победа)
         if not self.is_winner and self.get_winner() is None:
-            for obj in list(self.flag_sprites):
-                if self.horse.rect.right >= obj.rect.left:
+            for flag in list(self.flag_sprites):
+                if self.horse.passed_flag(flag):
                     self.set_winner(self)
                     self.is_winner = True
                     break

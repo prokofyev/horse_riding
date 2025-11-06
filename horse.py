@@ -1,7 +1,7 @@
 import pygame
 import random
 import time
-from pygame_animation import Animation, AnimationManager
+from pygame_animation import AnimationManager
 from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, IDLE_RANDOM_MIN_INTERVAL, IDLE_RANDOM_MAX_INTERVAL
 
 
@@ -177,6 +177,9 @@ class Horse(pygame.sprite.Sprite):
     def collide_barrier(self, barrier):
         return self.rect.right - HORSE_MARGIN_RIGHT > barrier.rect.left and \
                     self.rect.left + HORSE_MARGIN_LEFT < barrier.rect.right
+
+    def passed_flag(self, flag):
+        return self.rect.right - HORSE_MARGIN_RIGHT >= flag.rect.left
 
     def make_fall(self):
         self.set_animation('fall')
