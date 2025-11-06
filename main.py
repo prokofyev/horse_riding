@@ -4,7 +4,8 @@ import time
 from horse import Horse
 from path import Path
 from controls import Controls
-from constants import FPS, GRASS_COLOR, HORSE_OFFSET
+from constants import BARRIER_MAX_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, FPS, GRASS_MAX_SPAWN_DISTANCE, HORSE_OFFSET, GRASS_MIN_SPAWN_DISTANCE, TRACK_TOTAL_DISTANCE
+from track_plan import TrackPlan
 
 
 class Game:
@@ -15,9 +16,6 @@ class Game:
         self.screen_width = self.screen.get_width()
         self.screen_height = self.screen.get_height()
         self.clock = pygame.time.Clock()
-        
-        # Разделяем экран горизонтально пополам
-        mid_y = self.screen_height // 2
         
         # Создаем объекты управления для лошадей
         self.controls1 = Controls(
@@ -30,34 +28,13 @@ class Game:
             right=pygame.K_d,
             jump=pygame.K_w
         )
-        
-        self._winner_path = None
-        self._winner_time = None
-        def get_winner():
-            return self._winner_path
-        def set_winner(path):
-            if self._winner_path is None:
-                self._winner_path = path
-                self._winner_time = time.time()
-        
-        # Верхняя дорожка и лошадь
-        horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
-        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1, 
-            get_winner=get_winner, set_winner=set_winner)
-        
-        # Нижняя дорожка и лошадь
-        horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
-        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2, 
-            get_winner=get_winner, set_winner=set_winner)
 
         # Для передачи delta time
         self.dt = 0
         
-        # Стартовый обратный отсчет
-        self.countdown_active = False
-        self.countdown_start_time = None
-        self._start_countdown()
-    
+        # Инициализация состояния заезда — без дублирования логики
+        self._reset_game()
+   
     def run(self):
         running = True
         while running:
@@ -115,12 +92,21 @@ class Game:
         
         # Пересоздаем дорожки и лошадей
         mid_y = self.screen_height // 2
+        # Новый общий план
+
+        plan = TrackPlan.generate(
+            total_distance=TRACK_TOTAL_DISTANCE,
+            min_grass_spacing=GRASS_MIN_SPAWN_DISTANCE,
+            max_grass_spacing=GRASS_MAX_SPAWN_DISTANCE,
+            min_barrier_spacing=BARRIER_MIN_SPAWN_DISTANCE,
+            max_barrier_spacing=BARRIER_MAX_SPAWN_DISTANCE,
+        )
         horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
         self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1, 
-            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p))
+            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p), plan=plan)
         horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
         self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2, 
-            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p))
+            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p), plan=plan)
         
         # Новый обратный отсчет
         self._start_countdown()
