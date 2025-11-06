@@ -12,6 +12,7 @@ class Flag(pygame.sprite.Sprite):
         first_frame = self.animation.get_current_frame()
         self.image = first_frame
         self.rect = self.image.get_rect(bottomleft=position)
+        self.pos_x = float(self.rect.x)
         # Запускаем анимацию
         self.animation.play()
 

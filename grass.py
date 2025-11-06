@@ -11,6 +11,7 @@ class Grass(pygame.sprite.Sprite):
         image_path = self._choose_random_grass_image()
         self.image = self._load_image_with_alpha(image_path)
         self.rect = self.image.get_rect(bottomleft=position)
+        self.pos_x = float(self.rect.x)
 
     def _choose_random_grass_image(self):
         folder = os.path.join('assets', 'grass')

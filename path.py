@@ -58,8 +58,9 @@ class Path:
 
             perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
             
-            dx = int(base_dx * perspective_factor)
-            sprite.rect.x += dx
+            dxf = base_dx * perspective_factor
+            sprite.pos_x += dxf
+            sprite.rect.x = round(sprite.pos_x)
             
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.flag_sprites.remove(sprite)
@@ -68,8 +69,9 @@ class Path:
         for sprite in list(self.grass_sprites):
             perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
             
-            dx = int(base_dx * perspective_factor)
-            sprite.rect.x += dx
+            dxf = base_dx * perspective_factor
+            sprite.pos_x += dxf
+            sprite.rect.x = round(sprite.pos_x)
             
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.grass_sprites.remove(sprite)
@@ -77,8 +79,10 @@ class Path:
         for sprite in list(self.barrier_sprites):
             perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
                 
-            dx = int(base_dx * perspective_factor)
-            sprite.rect.x += dx
+            dxf = base_dx * perspective_factor
+            sprite.pos_x += dxf
+            sprite.rect.x = round(sprite.pos_x)
+            
             if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
                 self.barrier_sprites.remove(sprite)
 
