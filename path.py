@@ -8,12 +8,11 @@ from track_plan import TrackPlan
 
 
 class Path:
-    def __init__(self, horse, top_y, bottom_y, screen_width, controls, get_winner, set_winner, plan: TrackPlan):
+    def __init__(self, horse, top_y, bottom_y, screen_width, controls, race_controller, plan: TrackPlan):
         self.horse = horse
         self.screen_width = screen_width
         self.controls = controls
-        self.get_winner = get_winner
-        self.set_winner = set_winner
+        self.race_controller = race_controller
         self.plan = plan
         self.next_event_idx = 0
         self.grass_sprites = pygame.sprite.Group()
@@ -107,10 +106,10 @@ class Path:
             self.next_event_idx += 1
 
         # Проверка прохождения флага (победа)
-        if not self.is_winner and self.get_winner() is None:
+        if not self.is_winner and self.race_controller.get_winner() is None:
             for flag in list(self.flag_sprites):
                 if self.horse.passed_flag(flag):
-                    self.set_winner(self)
+                    self.race_controller.declare_winner(self)
                     self.is_winner = True
                     break
 

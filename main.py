@@ -4,8 +4,9 @@ import time
 from horse import Horse
 from path import Path
 from controls import Controls
-from constants import BARRIER_MAX_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, FPS, GRASS_MAX_SPAWN_DISTANCE, HORSE_OFFSET, GRASS_MIN_SPAWN_DISTANCE, TRACK_TOTAL_DISTANCE
+from constants import AUTO_GAME_RESTART_SEC, BARRIER_MAX_SPAWN_DISTANCE, BARRIER_MIN_SPAWN_DISTANCE, FPS, GRASS_MAX_SPAWN_DISTANCE, HORSE_OFFSET, GRASS_MIN_SPAWN_DISTANCE, TRACK_TOTAL_DISTANCE
 from track_plan import TrackPlan
+from race_controller import RaceController
 
 
 class Game:
@@ -74,9 +75,8 @@ class Game:
             pygame.display.flip()
 
             # Автоматический рестарт через 10 секунд после победы
-            if self._winner_path is not None and self._winner_time is not None:
-                if time.time() - self._winner_time >= 10.0:
-                    self._reset_game()
+            if self.race_controller.should_auto_restart(AUTO_GAME_RESTART_SEC):
+                self._reset_game()
 
             # Проверяем завершение обратного отсчета
             if self.countdown_active and self.countdown_start_time is not None:
@@ -86,9 +86,7 @@ class Game:
                     self.countdown_active = False
 
     def _reset_game(self):
-        # Сбрасываем победителя
-        self._winner_path = None
-        self._winner_time = None
+        self.race_controller = RaceController()
         
         # Пересоздаем дорожки и лошадей
         mid_y = self.screen_height // 2
@@ -102,19 +100,14 @@ class Game:
             max_barrier_spacing=BARRIER_MAX_SPAWN_DISTANCE,
         )
         horse = Horse((100, mid_y // 2 - HORSE_OFFSET))
-        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1, 
-            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p), plan=plan)
+        self.path1 = Path(horse, top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1,
+            race_controller=self.race_controller, plan=plan)
         horse = Horse((100, mid_y + mid_y // 2 - HORSE_OFFSET))
-        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2, 
-            get_winner=lambda: self._winner_path, set_winner=lambda p: self._set_winner(p), plan=plan)
+        self.path2 = Path(horse, top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2,
+            race_controller=self.race_controller, plan=plan)
         
         # Новый обратный отсчет
         self._start_countdown()
-
-    def _set_winner(self, path):
-        if self._winner_path is None:
-            self._winner_path = path
-            self._winner_time = time.time()
 
     def _start_countdown(self):
         self.countdown_active = True
