@@ -172,7 +172,7 @@ class Horse(pygame.sprite.Sprite):
             len(self.animations[self.current_animation].frames) - limit
 
     def is_near_ground(self):
-        return self.is_start_frame(10) or self.is_end_frame(10)
+        return self.is_start_frame(5) or self.is_end_frame(5)
 
     def collide_barrier(self, barrier):
         return self.rect.right - HORSE_MARGIN_RIGHT > barrier.rect.left and \

@@ -6,7 +6,7 @@ import random
 from constants import GRASS_MAX_Y_FRAC, GRASS_MIN_Y_FRAC, HORSE_SHADOW_MAX_Y_FRAC, HORSE_SHADOW_MIN_Y_FRAC
 
 
-@dataclass
+@dataclass(frozen=True)
 class TrackEvent:
     kind: str  # 'grass' | 'barrier' | 'flag'
     distance: float

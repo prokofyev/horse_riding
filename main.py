@@ -48,15 +48,14 @@ class Game:
                     # Выход из полноэкранного режима по ESC
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    # Передаем события в Path для обработки
-                    self.path1.handle_event(event)
-                    self.path2.handle_event(event)
-            
-            # Во время обратного отсчета не обновляем физику/анимацию дорожек
-            if not self.countdown_active:
-                # Обновление с передачей delta time
-                self.path1.update(self.dt)
-                self.path2.update(self.dt)
+                    if not self.countdown_active:
+                        # Передаем события в Path для обработки
+                        self.path1.handle_event(event)
+                        self.path2.handle_event(event)
+
+            # Обновление с передачей delta time
+            self.path1.update(self.dt)
+            self.path2.update(self.dt)
             
             # Отрисовка (фон рисуют сами Path: небо и почву)
             self.screen.fill((0, 0, 0))

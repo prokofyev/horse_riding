@@ -1,6 +1,6 @@
 import pygame
 
-from constants import HORSE_OFFSET_X, HORSE_SHADOW_MAX_Y_FRAC, HORSE_SHADOW_MIN_Y_FRAC, HORSE_Y_FRAC, SKY_COLOR, GRASS_COLOR, SKY_PROPORTION
+from constants import HORSE_OFFSET_X, HORSE_SHADOW_MAX_Y_FRAC, HORSE_SHADOW_MIN_Y_FRAC, HORSE_Y_FRAC, OFFSCREEN_MARGIN, SKY_COLOR, GRASS_COLOR, SKY_PROPORTION
 from grass import Grass
 from barrier import Barrier
 from flag import Flag
@@ -15,7 +15,8 @@ class Path:
         self.controls = controls
         self.race_controller = race_controller
         self.plan = plan
-        self.next_event_idx = 0
+        # Словарь для хранения спрайтов по TrackEvent
+        self._sprites_by_event = {}  # TrackEvent -> sprite
         self.grass_sprites = pygame.sprite.Group()
         self.barrier_sprites = pygame.sprite.Group()
         self.flag_sprites = pygame.sprite.Group()
@@ -27,8 +28,10 @@ class Path:
         self.top_y = top_y
         self.bottom_y = bottom_y
         
-        # Отступы за пределы экрана для спауна/очистки
-        self.offscreen_margin = 64
+        # Коэффициент для преобразования distance в пиксели экрана
+        # Определяет, сколько единиц distance видно на экране
+        self._view_distance_range = self.screen_width  # Примерно сколько единиц distance видно на экране
+        self._pixels_per_distance = self.screen_width / self._view_distance_range if self._view_distance_range > 0 else 1.0
 
         self.sky_bg = pygame.image.load(self.plan.sky_background_path).convert()
         self._sky_bg_scaled = None
@@ -39,53 +42,20 @@ class Path:
         direction = -1 if self.horse.facing_right else 1
         base_dx = direction * speed * dt
 
-        self.traveled_distance -= base_dx # движение направо с минусом
-        # Держим прогресс в пределах дистанции
-        if self.path_distance > 0:
-            if self.traveled_distance < 0:
-                self.traveled_distance = 0
-            elif self.traveled_distance > self.path_distance:
-                self.traveled_distance = self.path_distance
+        # Движение вправо увеличивает traveled_distance
+        # traveled_distance -= base_dx означает:
+        # если base_dx < 0 (движение вправо), то traveled_distance увеличивается
+        # если base_dx > 0 (движение влево), то traveled_distance уменьшается
+        self.traveled_distance -= base_dx
 
         sky_height = int((self.bottom_y - self.top_y) * SKY_PROPORTION)
         ground_y = self.top_y + sky_height
-
         horse_y = self.top_y + int((self.bottom_y - self.top_y) * HORSE_SHADOW_MAX_Y_FRAC)
 
-        # Двигаем флаг с учетом перспективы (ниже = быстрее)
-        for sprite in list(self.flag_sprites):
-            sprite.update(dt)
+        # Вычисляем видимые границы трассы и обновляем спрайты
+        self._update_visible_sprites(ground_y, horse_y, dt)
 
-            perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
-            
-            dxf = base_dx * perspective_factor
-            sprite.pos_x += dxf
-            sprite.rect.x = round(sprite.pos_x)
-            
-            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
-                self.flag_sprites.remove(sprite)
-
-        # Двигаем траву с учетом перспективы (ниже = быстрее)
-        for sprite in list(self.grass_sprites):
-            perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
-            
-            dxf = base_dx * perspective_factor
-            sprite.pos_x += dxf
-            sprite.rect.x = round(sprite.pos_x)
-            
-            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
-                self.grass_sprites.remove(sprite)
-
-        for sprite in list(self.barrier_sprites):
-            perspective_factor = (sprite.rect.bottom - ground_y) / (horse_y - ground_y)
-                
-            dxf = base_dx * perspective_factor
-            sprite.pos_x += dxf
-            sprite.rect.x = round(sprite.pos_x)
-            
-            if sprite.rect.right < -self.offscreen_margin or sprite.rect.left > self.screen_width + self.offscreen_margin:
-                self.barrier_sprites.remove(sprite)
-
+        # Проверка коллизий с барьерами
         if self.horse.current_animation in ['trot', 'gallop'] or \
                 self.horse.current_animation in ['barrier'] and self.horse.is_near_ground():
             collided = False
@@ -94,17 +64,6 @@ class Path:
                     collided = True
             if collided:
                 self.horse.make_fall()
-
-        # Спавним события из плана 
-        while self.next_event_idx < len(self.plan.events) and self.traveled_distance >= self.plan.events[self.next_event_idx].distance:
-            ev = self.plan.events[self.next_event_idx]
-            if ev.kind == 'grass':
-                self._spawn_grass_from_frac(ev.y_frac)
-            elif ev.kind == 'barrier':
-                self._spawn_barrier()
-            elif ev.kind == 'flag':
-                self._spawn_flag()
-            self.next_event_idx += 1
 
         # Проверка прохождения флага (победа)
         if not self.is_winner and self.race_controller.get_winner() is None:
@@ -186,8 +145,8 @@ class Path:
 
     def _draw_progress_bar(self, surface):
         if self.path_distance > 0:
-            bar_margin_x = 20
-            bar_margin_y = 10
+            bar_margin_x = 0
+            bar_margin_y = 0
             bar_height = 10
             bar_width = max(10, self.screen_width - bar_margin_x * 2)
             bar_x = bar_margin_x
@@ -245,18 +204,109 @@ class Path:
             except Exception:
                 self._sky_bg_scaled_flipped = None
 
-    def _spawn_grass_from_frac(self, y_frac: float):
-        y = int(self.top_y + y_frac * (self.bottom_y - self.top_y))
-        x = self.screen_width + self.offscreen_margin if self.horse.facing_right else -self.offscreen_margin
-        self.grass_sprites.add(Grass((x, y)))
+    def _calculate_view_bounds(self):
+        """Вычисляет видимые границы трассы на основе текущей позиции"""
+        # traveled_distance увеличивается при движении вправо
+        # Видимая область: события в диапазоне [traveled_distance - margin, traveled_distance + margin]
+        # margin зависит от ширины экрана и коэффициента преобразования
+        left_bound = self.traveled_distance - 2.5 * self._view_distance_range
+        right_bound = self.traveled_distance + 2.5 * self._view_distance_range
+                
+        return left_bound, right_bound
 
-    def _spawn_barrier(self):
-        y = int(self.top_y + HORSE_SHADOW_MAX_Y_FRAC * (self.bottom_y - self.top_y))
-        x = self.screen_width + self.offscreen_margin if self.horse.facing_right else -self.offscreen_margin
-        self.barrier_sprites.add(Barrier((x, y)))
+    def _distance_to_screen_x(self, distance: float, y_pos: float, ground_y: float, horse_y: float):
+        """Преобразует distance на трассе в позицию X на экране с учетом перспективы"""
+        # Разница между distance события и текущей позицией
+        distance_diff = distance - self.traveled_distance
+        
+        # Вычисляем фактор перспективы на основе Y позиции
+        # Объекты ниже (ближе к земле) двигаются быстрее
+        perspective_factor = (y_pos - ground_y) / (horse_y - ground_y)
+        
+        # Преобразуем distance_diff в пиксели с учетом перспективы
+        # Если distance > traveled_distance, объект впереди (справа на экране)
+        # Если distance < traveled_distance, объект позади (слева на экране)
+        pixels_diff = distance_diff * self._pixels_per_distance * perspective_factor
+        
+        # Позиция на экране: лошадь в HORSE_OFFSET_X
+        screen_x = HORSE_OFFSET_X + pixels_diff
+        
+        return screen_x
 
-    def _spawn_flag(self):
-        y = int(self.top_y + HORSE_SHADOW_MIN_Y_FRAC * (self.bottom_y - self.top_y))
-        x = self.screen_width + self.offscreen_margin if self.horse.facing_right else -self.offscreen_margin
-        self.flag_sprites.add(Flag((x, y)))
+    def _update_visible_sprites(self, ground_y: float, horse_y: float, dt: float):
+        """Обновляет спрайты на основе видимых границ трассы"""
+        # Вычисляем видимые границы
+        left_bound, right_bound = self._calculate_view_bounds()
+        
+        # Находим события, которые должны быть видны
+        visible_events = set()
+        for event in self.plan.events:
+            if left_bound <= event.distance <= right_bound:
+                visible_events.add(event)
+                
+                # Создаем или обновляем спрайт для видимого события
+                if event not in self._sprites_by_event:
+                    self._create_sprite_for_event(event, ground_y, horse_y)
+                else:
+                    self._update_sprite_position(event, ground_y, horse_y, dt)
+        
+        # Удаляем спрайты для невидимых событий
+        events_to_remove = []
+        for event, sprite in self._sprites_by_event.items():
+            if event not in visible_events:
+                events_to_remove.append(event)
+        
+        for event in events_to_remove:
+            self._remove_sprite_for_event(event)
+
+    def _create_sprite_for_event(self, event, ground_y: float, horse_y: float):
+        """Создает спрайт для события"""
+        if event.kind == 'grass':
+            y = int(self.top_y + event.y_frac * (self.bottom_y - self.top_y))
+            x = self._distance_to_screen_x(event.distance, y, ground_y, horse_y)
+            sprite = Grass((x, y))
+            self._sprites_by_event[event] = sprite
+            self.grass_sprites.add(sprite)
+        elif event.kind == 'barrier':
+            y = int(self.top_y + HORSE_SHADOW_MAX_Y_FRAC * (self.bottom_y - self.top_y))
+            x = self._distance_to_screen_x(event.distance, y, ground_y, horse_y)
+            sprite = Barrier((x, y))
+            self._sprites_by_event[event] = sprite
+            self.barrier_sprites.add(sprite)
+        elif event.kind == 'flag':
+            y = int(self.top_y + HORSE_SHADOW_MIN_Y_FRAC * (self.bottom_y - self.top_y))
+            x = self._distance_to_screen_x(event.distance, y, ground_y, horse_y)
+            sprite = Flag((x, y))
+            self._sprites_by_event[event] = sprite
+            self.flag_sprites.add(sprite)
+
+    def _update_sprite_position(self, event, ground_y: float, horse_y: float, dt: float):
+        """Обновляет позицию спрайта на основе distance события"""
+        sprite = self._sprites_by_event[event]
+        
+        # Обновляем анимацию для флагов
+        if event.kind == 'flag':
+            sprite.update(dt)
+        
+        # Вычисляем новую позицию
+        if event.kind == 'grass':
+            y = int(self.top_y + event.y_frac * (self.bottom_y - self.top_y))
+        elif event.kind == 'barrier':
+            y = int(self.top_y + HORSE_SHADOW_MAX_Y_FRAC * (self.bottom_y - self.top_y))
+        else:  # flag
+            y = int(self.top_y + HORSE_SHADOW_MIN_Y_FRAC * (self.bottom_y - self.top_y))
+        
+        x = self._distance_to_screen_x(event.distance, y, ground_y, horse_y)
+        sprite.rect.x = round(x)
+        sprite.rect.bottom = y
+
+    def _remove_sprite_for_event(self, event):
+        """Удаляет спрайт для события"""
+        sprite = self._sprites_by_event.pop(event)
+        if event.kind == 'grass':
+            self.grass_sprites.remove(sprite)
+        elif event.kind == 'barrier':
+            self.barrier_sprites.remove(sprite)
+        elif event.kind == 'flag':
+            self.flag_sprites.remove(sprite)
 
