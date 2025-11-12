@@ -1,13 +1,17 @@
+import numpy as np
 import pygame
 import random
 import time
+from color_utils import adjust_hue_saturation
 from pygame_animation import AnimationManager
 from constants import HORSE_MARGIN_LEFT, HORSE_MARGIN_RIGHT, IDLE_RANDOM_MIN_INTERVAL, IDLE_RANDOM_MAX_INTERVAL
 
 
 class Horse(pygame.sprite.Sprite):
-    def __init__(self, position):
+    def __init__(self, position, jacket_color_shift=0):
         super().__init__()
+        
+        self.jacket_color_shift = jacket_color_shift
         
         # Загрузка анимаций через AnimationManager
         self.animations = {
@@ -28,6 +32,11 @@ class Horse(pygame.sprite.Sprite):
         self.gallop_speed_factor = 1
 
         self.current_animation = 'idle'
+        
+        # Применяем цветовую трансформацию к анимациям
+        if jacket_color_shift != 0:
+            self._apply_color_tint()
+        
         self.image = self.animations[self.current_animation].get_current_frame()
         self.rect = self.image.get_rect(bottomleft=position)
         
@@ -185,3 +194,16 @@ class Horse(pygame.sprite.Sprite):
         self.set_animation('fall')
         self.gallop_speed_factor = 1
         self.queued_animation = None # если упал в прыжке
+    
+    def _apply_color_tint(self):
+        """Применяет цветовую тонировку к анимациям всадника"""
+        for _, animation in self.animations.items():
+        # animation = self.animations["idle"]
+        
+            tinted_frames = []
+            for frame in animation.frames:
+                tinted_frame = adjust_hue_saturation(frame, [(191, 70, 18), (223, 122, 66)],
+                        hue_shift=self.jacket_color_shift, 
+                        h_tolerance=15, s_tolerance=0.24, v_tolerance=0.26)
+                tinted_frames.append(tinted_frame)
+            animation.frames = tinted_frames

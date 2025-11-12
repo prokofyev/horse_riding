@@ -9,8 +9,8 @@ from track_plan import TrackPlan
 
 
 class Path:
-    def __init__(self, top_y, bottom_y, screen_width, controls, race_controller, plan: TrackPlan):
-        self.horse = Horse((HORSE_OFFSET_X, top_y + int(HORSE_Y_FRAC * (bottom_y - top_y))))
+    def __init__(self, top_y, bottom_y, screen_width, controls, race_controller, plan: TrackPlan, jacket_color_shift=0):
+        self.horse = Horse((HORSE_OFFSET_X, top_y + int(HORSE_Y_FRAC * (bottom_y - top_y))), jacket_color_shift=jacket_color_shift)
         self.screen_width = screen_width
         self.controls = controls
         self.race_controller = race_controller
@@ -309,4 +309,3 @@ class Path:
             self.barrier_sprites.remove(sprite)
         elif event.kind == 'flag':
             self.flag_sprites.remove(sprite)
-

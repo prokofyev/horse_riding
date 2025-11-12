@@ -99,10 +99,10 @@ class Game:
         )
 
         self.path1 = Path(top_y=0, bottom_y=mid_y, screen_width=self.screen_width, controls=self.controls1,
-            race_controller=self.race_controller, plan=plan)
+            race_controller=self.race_controller, plan=plan, jacket_color_shift=90)
 
         self.path2 = Path(top_y=mid_y, bottom_y=self.screen_height, screen_width=self.screen_width, controls=self.controls2,
-            race_controller=self.race_controller, plan=plan)
+            race_controller=self.race_controller, plan=plan, jacket_color_shift=0)
         
         # Новый обратный отсчет
         self._start_countdown()
